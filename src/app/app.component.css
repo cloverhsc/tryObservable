@@ -1,0 +1,12 @@
+#bg {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    background-color: #CCC;
+}
+
+#myChart {
+    position: relative;
+    width: 300px;
+    height: 300px;
+}
