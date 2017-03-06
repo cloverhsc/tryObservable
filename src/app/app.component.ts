@@ -23,6 +23,13 @@ import 'rxjs/add/operator/merge';
 import 'rxjs/add/operator/combineLatest';
 import 'rxjs/add/operator/zip';
 import 'rxjs/add/operator/withLatestFrom';
+import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/buffer';
+import 'rxjs/add/operator/bufferTime';
+import 'rxjs/add/operator/distinct';
+import 'rxjs/add/operator/catch';
+import 'rxjs/add/operator/switch';
+import 'rxjs/add/operator/mergeAll';
 
 import { Subscription } from 'rxjs/Subscription';
 import { Subject } from 'rxjs/Subject';
@@ -81,6 +88,13 @@ export class AppComponent implements OnInit{
         // this.init();
         // this.day9();
         // this.day10();
+        // this.day11();
+        // this.day12();
+        // this.clickEvent();
+        // this.day16();
+        // this.day17();
+        // this.day18();
+        // this.tryMergeAll();
     }
 
     init() {
@@ -271,5 +285,116 @@ export class AppComponent implements OnInit{
         () => console.log('---- withLatestFrom complete ----')
       );
 
+    }
+
+    day11() {
+      const video = document.getElementById('video');
+      const anchor = document.getElementById('anchor');
+      const scroll = Observable.fromEvent(document, 'scroll');
+
+      scroll.map(e => anchor.getBoundingClientRect().bottom < 0)
+      .subscribe(
+        bool => {
+          if (bool) {
+            video.classList.add('video-fixed');
+          } else {
+            video.classList.remove('video-fixed');
+          }
+        }
+      );
+
+      const mouseDown = Observable.fromEvent(video, 'mousedown');
+      const mouseUp = Observable.fromEvent(document, 'mouseup');
+      const mouseMove = Observable.fromEvent(document, 'mousemove');
+
+      const validValue = (value, max, min) => {
+        return Math.min(Math.max(value, min), max);
+      };
+
+      mouseDown.filter( e => video.classList.contains('video-fixed'))
+      .map(e => mouseMove.takeUntil(mouseUp)).concatAll()
+      .withLatestFrom(mouseDown, (move, down) => {
+        return {
+            x: validValue(move['clientX'] - down['offsetX'], window.innerWidth - 320, 0),
+            y: validValue(move['clientY'] - down['offsetY'], window.innerHeight - 180, 0)
+          };
+      })
+      .subscribe(
+        pos => {
+          video.style.top = pos.y + 'px';
+          video.style.left = pos.x + 'px';
+        }
+      );
+    }
+
+    day12() {
+      let source = Observable.interval(300);
+      let source2 = Observable.interval(1000);
+      let example = source.buffer(source2);
+
+      example.subscribe(
+        (value) => console.log(value),
+        (err) => console.log(err),
+        () => console.log('success')
+      );
+    }
+
+    clickEvent() {
+      const button = document.getElementById('demo');
+      const ck = Observable.fromEvent(button, 'click');
+      const example = ck.bufferTime(500).filter( evt => {
+        console.log(evt);
+        console.log(`--- length: ${evt['length']}`);
+        return true;
+      })
+
+      example.subscribe(
+        (x) => console.log('success'),
+        (err) => console.log(err),
+        () => console.log('success')
+      );
+    }
+
+    day16() {
+      let source1 = Observable.from([{value: 'a'}, {value: 'b'},
+      {value: 'c'}, {value: 'a'}, {value: 'b'}])
+                    .zip(Observable.interval(300), (x, y) => x );
+      let example1 = source1.distinct((x) => x.value);
+      example1.subscribe(
+        (value) => console.log(value),
+        (err) => console.log(err),
+        () => console.log('success')
+      );
+    }
+
+    day17() {
+      // let source = Observable.from(['a', 'b', 'c', 'd', 2])
+      //             .zip(Observable.interval(500), (x, y) => x);
+      // let example = source.map((x) => x.toUpperCase())
+      //               .catch(error => Observable.of('h'));
+    }
+
+    day18() {
+      let click = Observable.fromEvent(document.body, 'click');
+      let source = click.map(e => Observable.interval(1000));
+
+      let example = source.switch();
+      example.subscribe(
+        (value) => console.log(value),
+        (err) => console.log(err),
+        () => console.log('success')
+      );
+    }
+
+    tryMergeAll() {
+      let click = Observable.fromEvent(document.body, 'click');
+      let source = click.map(e => Observable.interval(1000));
+      let example = source.mergeAll();
+
+      example.subscribe(
+        (value) => console.log(value),
+        (err) => console.log(err),
+        () => console.log('success')
+      );
     }
 }
